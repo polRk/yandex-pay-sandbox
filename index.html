@@ -1,0 +1,84 @@
+<html>
+  <body>
+    <form action="https://httpbin.org/post" method="post">
+      <input type="text" />
+      <button>
+        submit
+      </button>
+    </form>
+    <div id="button_container"></div>
+    <script src="https://pay.yandex.ru/sdk/v1/pay.js" async onload="onYaPayLoad()"></script>
+
+    <script>
+    function onYaPayLoad() {
+      const YaPay = window.YaPay;
+
+      // Сформировать данные платежа.
+      var paymentData = {
+        env: YaPay.PaymentEnv.Sandbox,
+        version: 2,
+        countryCode: YaPay.CountryCode.Ru,
+        currencyCode: YaPay.CurrencyCode.Rub,
+        merchant: {
+          id: 'bbb9c171-2fab-45e6-b1f8-6212980aa9bb',
+          name: 'test-merchant-name'
+        },
+        order: {
+          id: 'test-order-id',
+          total: { amount: '40.00' },
+          items: [
+            { label: 'Item A', amount: '15.00' },
+            { label: 'Item B', amount: '25.00' }
+          ]
+        },
+        paymentMethods: [
+          {
+            type: YaPay.PaymentMethodType.Card,
+            gateway: 'yandex-trust',
+            gatewayMerchantId: 'test-gateway-merchant-id',
+            allowedAuthMethods: [YaPay.AllowedAuthMethod.PanOnly, YaPay.AllowedAuthMethod.CloudToken],
+            allowedCardNetworks: [
+              YaPay.AllowedCardNetwork.Visa,
+              YaPay.AllowedCardNetwork.Mastercard,
+              YaPay.AllowedCardNetwork.Mir,
+              YaPay.AllowedCardNetwork.Uzcard
+            ]
+          }
+        ]
+      };
+
+      // Создать платеж.
+      YaPay.createPayment(paymentData)
+        .then(function (payment) {
+          // Создать экземпляр кнопки.
+          var container = document.querySelector('#button_container');
+          var button = YaPay.Button.create({
+            type: YaPay.ButtonType.Pay,
+            theme: YaPay.ButtonTheme.Black,
+            width: YaPay.ButtonWidth.Auto,
+          });
+
+          // Смонтировать кнопку в DOM.
+          button.mount(container);
+
+          // Подписаться на событие click.
+          button.on(YaPay.ButtonEventType.Click, function onPaymentButtonClick() {
+            // Запустить оплату после клика на кнопку.
+            payment.checkout();
+          });
+
+          // Подписаться на событие process.
+          payment.on(YaPay.PaymentEventType.Process, function onPaymentProcess(event) {
+            // Получить платежный токен.
+            payment.complete(YaPay.CompleteReason.Success);
+            var form = document.querySelector('form');
+            form.submit();
+          });
+        })
+        .catch(function (err) {
+          // Если использовалась кастомная кнопка Yandex Pay, то скрываем ее.
+        });
+    }
+    </script>
+  </body>
+</html>
